@@ -696,6 +696,9 @@ class ADC:
             return False
         elif len(self._reads_filtered) == 1:
             self.measurement = self._reads_filtered[0]
+            # PBL adjustments:
+            self.measurement_from_zero = self.measurement - self._zero_offset
+            self.weight = self.measurement_from_zero / self._weight_multiple
             return True
 
         # get median and deviations from med
