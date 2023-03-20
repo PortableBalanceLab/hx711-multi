@@ -6,7 +6,8 @@ import argparse
 import time
 
 # top-level variables
-_readings_to_average = 10
+_readings_to_average = 1
+_readings_to_average_for_zeroing = 20 * _readings_to_average
 
 def _run_unguarded(
     clock_pin,
@@ -22,12 +23,12 @@ def _run_unguarded(
         channel_A_gain=128,
         channel_select='A',
         all_or_nothing=False,
-        log_level='CRITICAL'
+        log_level='CRITICAL'  # change this if you're having hardware problems
     )
     hx711.reset()
 
     try:
-        hx711.zero(3*_readings_to_average)  # can raise `Exception` if connection is broken
+        hx711.zero(_readings_to_average_for_zeroing)  # can raise `Exception` if connection is broken
     except Exception as e:
         if ignore_errors:
             print(e)
