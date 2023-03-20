@@ -696,7 +696,13 @@ class ADC:
             return False
         elif len(self._reads_filtered) == 1:
             self.measurement = self._reads_filtered[0]
-            # PBL adjustments:
+            # PBL adjustments
+            #
+            # (AK): I believe students are only told to only take one measurement, so
+            # that median+stdev filtering (below) doesn't trigger, because when it
+            # does--and it does, a lot, when measuring human motion on the plate, it
+            # will drop the entire measurement - this not-obvious feature isn't
+            # documented anywhere
             self.measurement_from_zero = self.measurement - self._zero_offset
             self.weight = self.measurement_from_zero / self._weight_multiple
             return True
