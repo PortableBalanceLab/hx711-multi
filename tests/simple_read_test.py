@@ -1,26 +1,14 @@
 #!/usr/bin/env python3
 
-# try to import hx711, first from src dir, second from src dir after adding parent to path, last from pip
-try:
-    from src.hx711_multi import HX711
-except:
-    try:
-        # try after inserting parent folder in path
-        import sys
-        import pathlib
-        from os.path import abspath
-        sys.path.insert(0, str(pathlib.Path(abspath(__file__)).parents[1]))
-        from src.hx711_multi import HX711
-    except:
-        from hx711_multi import HX711
-
+from hx711_multi import HX711
+import sys
 from time import perf_counter
 import RPi.GPIO as GPIO  # import GPIO
 
 # init GPIO (should be done outside HX711 module in case you are using other GPIO functionality)
 GPIO.setmode(GPIO.BCM)  # set GPIO pin mode to BCM numbering
 
-readings_to_average = 10
+readings_to_average = 1
 sck_pin = 1
 dout_pins = [2, 3, 4, 14, 15]
 weight_multiples = [-5176, -5500, -5690, -5484, -5455]
@@ -35,7 +23,7 @@ hx711 = HX711(dout_pins=dout_pins,
 # reset ADC, zero it
 hx711.reset()
 try:
-    hx711.zero(readings_to_average=readings_to_average*3)
+    hx711.zero(readings_to_average=128*readings_to_average)
 except Exception as e:
     print(e)
 # uncomment below loop to see raw 2's complement and read integers
