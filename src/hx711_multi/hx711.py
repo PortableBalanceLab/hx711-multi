@@ -381,27 +381,47 @@ class HX711:
     def zero(self, readings_to_average: int = 30, retry_limit: int = 10):
         """ perform raw read of a few samples to get a raw mean measurement, and set this as zero offset """
 
-        # try up to retry_limit times to get accurate readings for zeroing
-        readings = None
-        for _ in range(retry_limit):
-            readings_new = self.read_raw(readings_to_average)
-            if readings is not None:
-                readings = [
-                    r_new if r_new is not None else r_old
-                    for r_new, r_old in zip(readings_new, readings)
-                ]
+        assert readings_to_average > 0
+        assert retry_limit > 0
+
+        # accumulate each measurement into a rolling average
+        num_readings = 0
+        rolling_averages = []
+        while num_readings < readings_to_average:
+
+            # take a measurement, with retries
+            reading = None
+            tries = 0
+            while reading is None and tries < retry_limit:
+                reading = self.read_raw(1)
+                tries += 1
+
+            if not reading:
+                raise RuntimeError(f"failed to take a measurement after {retry_limit} tries")
+
+            # accumulate the reading
+            if num_readings == 0:
+                rolling_averages = reading
             else:
-                readings = readings_new
-            if (not self._single_adc and None not in readings) or (readings is not None):
-                break
+                assert len(rolling_averages) == len(reading)
+                for i in range(0, len(rolling_averages)):
+                    v = num_readings * rolling_averages[i] + reading[i]
+                    rolling_averages[i] = v / (num_readings + 1)
+
+            num_readings += 1
+
+        assert num_readings == readings_to_average
+        assert len(rolling_averages) == len(self._adcs)
+
         zeroing_errors = []
-        adc: ADC
-        for adc in self._adcs:
+        for i in range(0, len(self._adcs)):
+            adc = self._adcs[i]
+            avg = rolling_averages[i]
             if adc._ready:
                 self._logger.debug(
                     f'zeroing with {len(adc._reads_filtered)} datapoints')
                 try:
-                    adc.zero_from_last_measurement()
+                    adc.zero(avg)
                 except Exception as e:
                     zeroing_errors.append(e)
                     continue
