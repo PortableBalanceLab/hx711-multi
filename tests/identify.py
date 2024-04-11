@@ -7,7 +7,7 @@ import time
 
 # top-level variables
 _readings_to_average = 1
-_readings_to_average_for_zeroing = 20 * _readings_to_average
+_readings_to_average_for_zeroing = 100 * _readings_to_average
 
 def _run_unguarded(
     clock_pin,

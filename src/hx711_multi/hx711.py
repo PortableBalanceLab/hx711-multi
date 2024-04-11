@@ -378,8 +378,26 @@ class HX711:
         else:
             return False
 
-    def zero(self, readings_to_average: int = 30, retry_limit: int = 10):
-        """ perform raw read of a few samples to get a raw mean measurement, and set this as zero offset """
+    """ internal helper: returns true if the reading is valid (i.e. non-None and within some threshold limits)"""
+    def _is_valid_reading(self, reading, lower_threshold, upper_threshold):
+        if not reading:
+            return False
+        for v in reading:
+            if not v:
+                return False
+            if v < lower_threshold:
+                return False
+            if v > upper_threshold:
+                return False
+        return True
+
+    """ perform raw read of a few samples to get a raw mean measurement, and set this as zero offset """
+    def zero(
+        self,
+        readings_to_average: int = 30,
+        retry_limit: int = 20,
+        lower_threshold: float=-1000000.0,
+        upper_threshold: float= 1000000.0):
 
         assert readings_to_average > 0
         assert retry_limit > 0
@@ -389,23 +407,23 @@ class HX711:
         rolling_averages = []
         while num_readings < readings_to_average:
 
-            # take a measurement, with retries
+            # take a measurement, with retries and validation (thresholding, etc.)
             reading = None
             tries = 0
-            while reading is None and tries < retry_limit:
+            while not self._is_valid_reading(reading, lower_threshold, upper_threshold) and tries < retry_limit:
                 reading = self.read_raw(1)
                 tries += 1
 
-            if not reading:
+            if not self._is_valid_reading(reading, lower_threshold, upper_threshold):
                 raise RuntimeError(f"failed to take a measurement after {retry_limit} tries")
 
-            # accumulate the reading
+            # accumulate the reading into the rolling average
             if num_readings == 0:
                 rolling_averages = reading
             else:
                 assert len(rolling_averages) == len(reading)
                 for i in range(0, len(rolling_averages)):
-                    v = num_readings * rolling_averages[i] + reading[i]
+                    v = num_readings*rolling_averages[i] + reading[i]
                     rolling_averages[i] = v / (num_readings + 1)
 
             num_readings += 1
@@ -413,6 +431,7 @@ class HX711:
         assert num_readings == readings_to_average
         assert len(rolling_averages) == len(self._adcs)
 
+        # set the zero point of each ADC
         zeroing_errors = []
         for i in range(0, len(self._adcs)):
             adc = self._adcs[i]
