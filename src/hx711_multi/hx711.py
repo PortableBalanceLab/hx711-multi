@@ -412,6 +412,8 @@ class HX711:
             tries = 0
             while not self._is_valid_reading(reading, lower_threshold, upper_threshold) and tries < retry_limit:
                 reading = self.read_raw(1)
+                if not hasattr(reading, '__iter__'):
+                    reading = [reading]
                 tries += 1
 
             if not self._is_valid_reading(reading, lower_threshold, upper_threshold):
