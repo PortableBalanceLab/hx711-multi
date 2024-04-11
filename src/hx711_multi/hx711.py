@@ -507,7 +507,7 @@ class HX711:
 
         # reset ADCs, zero them, set adc multiple to 1
         self.reset()
-        self.zero(readings_to_average=readings_to_average)
+        self.zero(readings_to_average=16*readings_to_average)
         self._adcs[adc_index]._weight_multiple = 1
 
         # loop until no more known weights or user has not supplied a known weight input
